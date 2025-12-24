@@ -47,6 +47,12 @@ Settings are managed via TOML configuration file:
 - Aspect ratio definitions and minimum dimensions
 - Model provider settings (CPU-only in MVP)
 
+### Configuration file discovery
+
+- `--config <path>` flag overrides other sources.
+- Falls back to `./config.toml`, then `~/.config/icarus/config.toml`.
+- When no file exists, the built-in defaults are used so the CLI still runs.
+
 ## Output Organization
 
 When using `--all-aspects`, crops are organized into subdirectories:

@@ -1,0 +1,69 @@
+# Icarus Configuration File
+# AI-Powered Photo Cropping Tool
+
+[general]
+# Directory where cropped images will be saved
+output_dir = "./output"
+
+# Logging level: trace, debug, info, warn, error
+log_level = "info"
+
+[model]
+# Execution provider: cpu only for MVP (GPU is future enhancement)
+provider = "cpu"
+
+# Path to the ONNX model file
+model_path = "./models/yolov8n.onnx"
+
+# Confidence threshold for object detection (0.0-1.0)
+# Objects detected with confidence below this value will be ignored
+confidence_threshold = 0.5
+
+# Non-Maximum Suppression (NMS) threshold (0.0-1.0)
+# Controls how overlapping detections are filtered
+nms_threshold = 0.45
+
+# Input size for the model [width, height]
+input_size = [640, 640]
+
+[cropping]
+# How to weight detected objects when determining crop center
+# Options: "area", "confidence", "equal"
+# - area: Larger objects have more influence
+# - confidence: Higher confidence detections have more influence
+# - equal: All detected objects weighted equally
+center_weight = "area"
+
+# Minimum dimension ratio (0.0-1.0)
+# Ensures cropped regions are at least this percentage of target dimensions
+min_dimension_ratio = 0.75
+
+# Default output format: jpeg, png, webp
+default_format = "jpeg"
+
+# Default JPEG quality (1-100)
+# Higher values = better quality but larger file size
+default_quality = 90
+
+[aspects]
+# Portrait aspect ratio (9:16)
+# Common for phone wallpapers and vertical social media
+portrait_width = 9
+portrait_height = 16
+
+# Mobile aspect ratio (9:20)
+# Standardized mobile aspect for modern smartphones
+mobile_width = 9
+mobile_height = 20
+
+# Landscape aspect ratio (21:9)
+# Ultra-wide format for cinematic content
+landscape_width = 21
+landscape_height = 9
+
+[paths]
+# Directory for storing downloaded ONNX models
+models_dir = "./models"
+
+# Directory for temporary files and cache
+cache_dir = "./cache"
