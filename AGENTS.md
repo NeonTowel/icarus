@@ -30,3 +30,7 @@
 ## Configuration & Security Tips
 - Prefer `--config <path>` when testing custom settings; otherwise use `config.toml` or `~/.config/icarus/config.toml`.
 - Let downstream automation override model/cache directories via env vars or CLI flags to keep secrets out of the repo.
+
+## Tooling & Workflow
+- Use the workspace-provided GitHub MCP tools (issue/pr search, review helpers, etc.) as the primary workflow for reviewing, tagging, and referencing repository work.
+- When drafting comments, reviews, or status updates, prefer MCP artifacts (e.g., `mcp__github__issue_read`) before falling back to manual GitHub UI steps to ensure traceability.
