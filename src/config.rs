@@ -51,6 +51,10 @@ pub struct CroppingConfig {
     pub default_format: String,
     #[serde(default = "default_quality")]
     pub default_quality: u8,
+    #[serde(default = "default_min_height_portrait")]
+    pub min_height_portrait: u32,
+    #[serde(default = "default_min_width_landscape")]
+    pub min_width_landscape: u32,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -121,6 +125,14 @@ fn default_quality() -> u8 {
     90
 }
 
+fn default_min_height_portrait() -> u32 {
+    1800
+}
+
+fn default_min_width_landscape() -> u32 {
+    1800
+}
+
 fn default_portrait_width() -> u32 {
     9
 }
@@ -138,7 +150,7 @@ fn default_mobile_height() -> u32 {
 }
 
 fn default_landscape_width() -> u32 {
-    21
+    20
 }
 
 fn default_landscape_height() -> u32 {
@@ -181,6 +193,8 @@ impl Default for CroppingConfig {
             min_dimension_ratio: default_min_dimension_ratio(),
             default_format: default_format(),
             default_quality: default_quality(),
+            min_height_portrait: default_min_height_portrait(),
+            min_width_landscape: default_min_width_landscape(),
         }
     }
 }
@@ -194,6 +208,19 @@ impl Default for AspectsConfig {
             mobile_height: default_mobile_height(),
             landscape_width: default_landscape_width(),
             landscape_height: default_landscape_height(),
+        }
+    }
+}
+
+impl AspectsConfig {
+    /// Get aspect ratio dimensions for a given aspect type.
+    /// Returns (width_ratio, height_ratio).
+    pub fn get_aspect_ratio(&self, aspect: crate::cli::AspectRatio) -> (u32, u32) {
+        use crate::cli::AspectRatio;
+        match aspect {
+            AspectRatio::Portrait => (self.portrait_width, self.portrait_height),
+            AspectRatio::Mobile => (self.mobile_width, self.mobile_height),
+            AspectRatio::Landscape => (self.landscape_width, self.landscape_height),
         }
     }
 }

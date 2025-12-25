@@ -1,0 +1,44 @@
+version: '3'
+
+vars:
+  MODELS_DIR: ./models
+  HF_YOLOV10M_ONNX: https://huggingface.co/onnx-community/yolov10m/resolve/main/onnx/model.onnx
+  HF_YOLOV10M_CONFIG: https://huggingface.co/onnx-community/yolov10m/resolve/main/config.json
+  HF_YOLOV10M_PREPROCESSOR: https://huggingface.co/onnx-community/yolov10m/resolve/main/preprocessor_config.json
+  HF_DETR_ONNX: https://huggingface.co/Xenova/detr-resnet-50/resolve/main/onnx/model.onnx
+  HF_DETR_CONFIG: https://huggingface.co/Xenova/detr-resnet-50/resolve/main/config.json
+  HF_DETR_PREPROCESSOR: https://huggingface.co/Xenova/detr-resnet-50/resolve/main/preprocessor_config.json
+
+tasks:
+  default:
+    cmds:
+      - task: download-models
+
+  download-models:
+    desc: "Download YOLOv10m and DETR ONNX models from HuggingFace"
+    vars:
+      YOLOV10M_DIR: "{{.MODELS_DIR}}/yolov10m"
+      DETR_DIR: "{{.MODELS_DIR}}/detr"
+    cmds:
+      - mkdir -p {{.YOLOV10M_DIR}}
+      - mkdir -p {{.DETR_DIR}}
+      - echo "Downloading YOLOv10m model..."
+      - curl -L {{.HF_YOLOV10M_ONNX}} -o {{.YOLOV10M_DIR}}/model.onnx
+      - echo "Downloading YOLOv10m config..."
+      - curl -L {{.HF_YOLOV10M_CONFIG}} -o {{.YOLOV10M_DIR}}/config.json
+      - echo "Downloading YOLOv10m preprocessor config..."
+      - curl -L {{.HF_YOLOV10M_PREPROCESSOR}} -o {{.YOLOV10M_DIR}}/preprocessor_config.json
+      - echo "Downloading DETR model..."
+      - curl -L {{.HF_DETR_ONNX}} -o {{.DETR_DIR}}/model.onnx
+      - echo "Downloading DETR config..."
+      - curl -L {{.HF_DETR_CONFIG}} -o {{.DETR_DIR}}/config.json
+      - echo "Downloading DETR preprocessor config..."
+      - curl -L {{.HF_DETR_PREPROCESSOR}} -o {{.DETR_DIR}}/preprocessor_config.json
+      - echo "✓ All models downloaded to {{.MODELS_DIR}}/"
+
+  clean-models:
+    desc: "Remove downloaded models"
+    cmds:
+      - rm -rf {{.MODELS_DIR}}/yolov10m
+      - rm -rf {{.MODELS_DIR}}/detr
+      - echo "✓ Models cleaned"

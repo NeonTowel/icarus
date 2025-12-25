@@ -20,8 +20,7 @@ pub fn init_logging(verbosity: u8, quiet: bool, config_level: &str) {
         .with_writer(std::io::stderr)
         .finish();
 
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("Failed to set tracing subscriber");
+    tracing::subscriber::set_global_default(subscriber).expect("Failed to set tracing subscriber");
 }
 
 fn parse_log_level(level: &str) -> Level {
