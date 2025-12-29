@@ -1,4 +1,5 @@
-use image::{DynamicImage, ImageFormat as ImgFormat};
+use image::{DynamicImage, GenericImageView, ImageFormat as ImgFormat};
+use ndarray::Array4;
 use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::Path;
@@ -11,6 +12,14 @@ pub struct ImageInfo {
     pub height: u32,
     pub format: ImgFormat,
     pub has_exif: bool,
+}
+
+pub struct PreprocessedImage {
+    pub tensor: Array4<f32>,
+    pub scale_x: f32,
+    pub scale_y: f32,
+    pub pad_x: f32,
+    pub pad_y: f32,
 }
 
 #[instrument(skip_all, fields(path = %path.display()))]
@@ -43,6 +52,82 @@ pub fn load_image(path: &Path) -> Result<DynamicImage> {
     );
 
     Ok(img)
+}
+
+#[instrument(skip(image))]
+pub fn preprocess_for_detection(
+    image: &DynamicImage,
+    target_size: u32,
+) -> Result<PreprocessedImage> {
+    let (orig_width, orig_height) = image.dimensions();
+    debug!(
+        "Preprocessing image: {}x{} -> {}x{}",
+        orig_width, orig_height, target_size, target_size
+    );
+
+    // Calculate scale factors for aspect ratio preservation
+    let scale = (target_size as f32) / (orig_width.max(orig_height) as f32);
+    let new_width = (orig_width as f32 * scale) as u32;
+    let new_height = (orig_height as f32 * scale) as u32;
+
+    // Resize to maintain aspect ratio
+    let resized = image.resize(new_width, new_height, image::imageops::FilterType::Lanczos3);
+
+    // Get actual resized dimensions (may differ slightly from calculated due to rounding)
+    let (actual_width, actual_height) = resized.dimensions();
+
+    // Calculate padding to reach target size
+    let pad_x = (target_size - actual_width) as f32;
+    let pad_y = (target_size - actual_height) as f32;
+    let pad_left = (pad_x / 2.0).floor() as u32;
+    let pad_top = (pad_y / 2.0).floor() as u32;
+
+    // Create padded image (with black/zero padding)
+    let mut padded =
+        image::ImageBuffer::from_pixel(target_size, target_size, image::Rgb([0u8, 0u8, 0u8]));
+
+    // Copy resized image to padded location
+    let resized_rgb = resized.to_rgb8();
+    for y in 0..actual_height {
+        for x in 0..actual_width {
+            let pixel = resized_rgb.get_pixel(x, y);
+            padded.put_pixel(pad_left + x, pad_top + y, *pixel);
+        }
+    }
+    let padded_img = DynamicImage::ImageRgb8(padded);
+
+    // Convert to RGB if needed
+    let rgb_img = padded_img.to_rgb8();
+
+    // Normalize pixels to [0, 1] and convert to ndarray in NCHW format
+    // NCHW: (Batch=1, Channels=3, Height, Width)
+    let mut tensor = Array4::<f32>::zeros((1, 3, target_size as usize, target_size as usize));
+
+    for y in 0..target_size as usize {
+        for x in 0..target_size as usize {
+            let pixel = rgb_img.get_pixel(x as u32, y as u32);
+            let r = (pixel[0] as f32) / 255.0;
+            let g = (pixel[1] as f32) / 255.0;
+            let b = (pixel[2] as f32) / 255.0;
+
+            tensor[[0, 0, y, x]] = r;
+            tensor[[0, 1, y, x]] = g;
+            tensor[[0, 2, y, x]] = b;
+        }
+    }
+
+    debug!(
+        "Preprocessing complete: scale={:.4}, pad=({:.2}, {:.2})",
+        scale, pad_x, pad_y
+    );
+
+    Ok(PreprocessedImage {
+        tensor,
+        scale_x: scale,
+        scale_y: scale,
+        pad_x: pad_left as f32,
+        pad_y: pad_top as f32,
+    })
 }
 
 #[instrument(skip(image), fields(path = %path.display()))]
@@ -270,5 +355,48 @@ mod tests {
 
         let flipped = rotate_for_orientation(img.clone(), 2);
         assert_eq!(flipped.dimensions(), (3, 5));
+    }
+
+    #[test]
+    fn preprocess_creates_correct_tensor_shape() {
+        let img = DynamicImage::new_rgb8(640, 480);
+        let result = preprocess_for_detection(&img, 640).unwrap();
+
+        // Should produce a 4D tensor in NCHW format (batch=1, channels=3, height=640, width=640)
+        assert_eq!(result.tensor.dim(), (1, 3, 640, 640));
+    }
+
+    #[test]
+    fn preprocess_normalizes_pixel_values() {
+        let img = DynamicImage::new_rgb8(100, 100);
+        let result = preprocess_for_detection(&img, 100).unwrap();
+
+        // All pixels should be between 0 and 1
+        let min = result.tensor.iter().cloned().fold(f32::INFINITY, f32::min);
+        let max = result.tensor.iter().cloned().fold(0.0, f32::max);
+
+        assert!(min >= 0.0);
+        assert!(max <= 1.0);
+    }
+
+    #[test]
+    fn preprocess_maintains_aspect_ratio() {
+        let img = DynamicImage::new_rgb8(1920, 1080);
+        let result = preprocess_for_detection(&img, 640).unwrap();
+
+        // Scale should be around 0.333... (640 / 1920)
+        let expected_scale = 640.0 / 1920.0;
+        assert!((result.scale_x - expected_scale).abs() < 0.01);
+        assert_eq!(result.scale_x, result.scale_y);
+    }
+
+    #[test]
+    fn preprocess_handles_small_images() {
+        let img = DynamicImage::new_rgb8(320, 240);
+        let result = preprocess_for_detection(&img, 640).unwrap();
+
+        assert_eq!(result.tensor.dim(), (1, 3, 640, 640));
+        // Scale should be 2.0 (640 / 320)
+        assert!((result.scale_x - 2.0).abs() < 0.01);
     }
 }

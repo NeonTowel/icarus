@@ -13,7 +13,7 @@ log_level = "info"
 provider = "cpu"
 
 # Path to the ONNX model file
-model_path = "./models/yolov8n.onnx"
+model_path = "./models/yolov10m/model.onnx"
 
 # Confidence threshold for object detection (0.0-1.0)
 # Objects detected with confidence below this value will be ignored

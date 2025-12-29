@@ -1,5 +1,3 @@
-use crate::error::IcarusError;
-
 /// Represents a crop box with position and dimensions
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CropBox {
