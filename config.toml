@@ -32,7 +32,7 @@ input_size = [640, 640]
 # - area: Larger objects have more influence
 # - confidence: Higher confidence detections have more influence
 # - equal: All detected objects weighted equally
-center_weight = "area"
+center_weight = "confidence"
 
 # Minimum dimension ratio (0.0-1.0)
 # Ensures cropped regions are at least this percentage of target dimensions

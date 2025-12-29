@@ -64,6 +64,14 @@ pub struct DetectionResult {
     pub center_x: f32,
     /// Center Y coordinate of highest-confidence person detection
     pub center_y: f32,
+    /// Left edge of bounding box
+    pub bbox_xmin: f32,
+    /// Top edge of bounding box
+    pub bbox_ymin: f32,
+    /// Right edge of bounding box
+    pub bbox_xmax: f32,
+    /// Bottom edge of bounding box
+    pub bbox_ymax: f32,
     /// Confidence score of the detection (0.0-1.0)
     pub confidence: f32,
     /// Whether a person was detected above confidence threshold
@@ -75,6 +83,10 @@ impl Default for DetectionResult {
         Self {
             center_x: 0.0,
             center_y: 0.0,
+            bbox_xmin: 0.0,
+            bbox_ymin: 0.0,
+            bbox_xmax: 0.0,
+            bbox_ymax: 0.0,
             confidence: 0.0,
             has_person: false,
         }
@@ -323,6 +335,10 @@ impl OnnxDetector {
                 return Ok(DetectionResult {
                     center_x: image.width() as f32 / 2.0,
                     center_y: image.height() as f32 / 2.0,
+                    bbox_xmin: 0.0,
+                    bbox_ymin: 0.0,
+                    bbox_xmax: 0.0,
+                    bbox_ymax: 0.0,
                     confidence: 0.0,
                     has_person: false,
                 });
@@ -419,6 +435,10 @@ impl OnnxDetector {
                 DetectionResult {
                     center_x: bbox.center_x(),
                     center_y: bbox.center_y(),
+                    bbox_xmin: bbox.xmin,
+                    bbox_ymin: bbox.ymin,
+                    bbox_xmax: bbox.xmax,
+                    bbox_ymax: bbox.ymax,
                     confidence: conf,
                     has_person: true,
                 }
@@ -428,6 +448,10 @@ impl OnnxDetector {
                 DetectionResult {
                     center_x: original_image.width() as f32 / 2.0,
                     center_y: original_image.height() as f32 / 2.0,
+                    bbox_xmin: 0.0,
+                    bbox_ymin: 0.0,
+                    bbox_xmax: 0.0,
+                    bbox_ymax: 0.0,
                     confidence: 0.0,
                     has_person: false,
                 }
@@ -503,6 +527,10 @@ impl OnnxDetector {
                 DetectionResult {
                     center_x: bbox.center_x(),
                     center_y: bbox.center_y(),
+                    bbox_xmin: bbox.xmin,
+                    bbox_ymin: bbox.ymin,
+                    bbox_xmax: bbox.xmax,
+                    bbox_ymax: bbox.ymax,
                     confidence: conf,
                     has_person: true,
                 }
@@ -512,6 +540,10 @@ impl OnnxDetector {
                 DetectionResult {
                     center_x: original_image.width() as f32 / 2.0,
                     center_y: original_image.height() as f32 / 2.0,
+                    bbox_xmin: 0.0,
+                    bbox_ymin: 0.0,
+                    bbox_xmax: 0.0,
+                    bbox_ymax: 0.0,
                     confidence: 0.0,
                     has_person: false,
                 }
@@ -586,6 +618,10 @@ mod tests {
         let result = DetectionResult::default();
         assert_eq!(result.center_x, 0.0);
         assert_eq!(result.center_y, 0.0);
+        assert_eq!(result.bbox_xmin, 0.0);
+        assert_eq!(result.bbox_ymin, 0.0);
+        assert_eq!(result.bbox_xmax, 0.0);
+        assert_eq!(result.bbox_ymax, 0.0);
         assert_eq!(result.confidence, 0.0);
         assert!(!result.has_person);
     }
@@ -595,11 +631,19 @@ mod tests {
         let result = DetectionResult {
             center_x: 100.0,
             center_y: 150.0,
+            bbox_xmin: 50.0,
+            bbox_ymin: 100.0,
+            bbox_xmax: 150.0,
+            bbox_ymax: 200.0,
             confidence: 0.95,
             has_person: true,
         };
         assert_eq!(result.center_x, 100.0);
         assert_eq!(result.center_y, 150.0);
+        assert_eq!(result.bbox_xmin, 50.0);
+        assert_eq!(result.bbox_ymin, 100.0);
+        assert_eq!(result.bbox_xmax, 150.0);
+        assert_eq!(result.bbox_ymax, 200.0);
         assert_eq!(result.confidence, 0.95);
         assert!(result.has_person);
     }

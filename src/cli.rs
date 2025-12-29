@@ -27,6 +27,9 @@ pub struct Cli {
     #[arg(long, help = "Generate debug visualizations")]
     pub visualize: bool,
 
+    #[arg(long, help = "Draw detection bounding boxes on output")]
+    pub r#box: bool,
+
     #[arg(long, help = "Target aspect (portrait|mobile|landscape)")]
     pub aspect: Option<AspectRatio>,
 

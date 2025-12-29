@@ -5,6 +5,7 @@ mod detection;
 mod error;
 mod image_io;
 mod logging;
+mod visualization;
 
 use clap::Parser;
 use tracing::{info, warn};
@@ -215,7 +216,7 @@ fn handle_crop(target: &CropTarget, cli: &Cli, config: &Config) -> Result<(), Ic
                     crop_box.height,
                 )
                 .to_image();
-                let cropped = image::DynamicImage::ImageRgba8(cropped);
+                let mut cropped = image::DynamicImage::ImageRgba8(cropped);
 
                 info!(
                     "Cropped image for aspect {:?}: {}x{}",
@@ -223,6 +224,22 @@ fn handle_crop(target: &CropTarget, cli: &Cli, config: &Config) -> Result<(), Ic
                     cropped.width(),
                     cropped.height()
                 );
+
+                // Draw detection marker if --box flag is set
+                if cli.r#box {
+                    // Adjust detection coordinates to crop space
+                    let adjusted_detection = detection::DetectionResult {
+                        center_x: (detection.center_x - crop_box.x as f32).max(0.0),
+                        center_y: (detection.center_y - crop_box.y as f32).max(0.0),
+                        bbox_xmin: (detection.bbox_xmin - crop_box.x as f32).max(0.0),
+                        bbox_ymin: (detection.bbox_ymin - crop_box.y as f32).max(0.0),
+                        bbox_xmax: (detection.bbox_xmax - crop_box.x as f32).min(cropped.width() as f32),
+                        bbox_ymax: (detection.bbox_ymax - crop_box.y as f32).min(cropped.height() as f32),
+                        confidence: detection.confidence,
+                        has_person: detection.has_person,
+                    };
+                    cropped = visualization::draw_detection_marker(&cropped, &adjusted_detection);
+                }
 
                 // Determine output directory (nested if --all-aspects)
                 let aspect_dir = if cli.all_aspects {
@@ -408,7 +425,23 @@ fn process_single_file(
             crop_box.height,
         )
         .to_image();
-        let cropped = image::DynamicImage::ImageRgba8(cropped);
+        let mut cropped = image::DynamicImage::ImageRgba8(cropped);
+
+        // Draw detection marker if --box flag is set
+        if cli.r#box {
+            // Adjust detection coordinates to crop space
+            let adjusted_detection = detection::DetectionResult {
+                center_x: (detection.center_x - crop_box.x as f32).max(0.0),
+                center_y: (detection.center_y - crop_box.y as f32).max(0.0),
+                bbox_xmin: (detection.bbox_xmin - crop_box.x as f32).max(0.0),
+                bbox_ymin: (detection.bbox_ymin - crop_box.y as f32).max(0.0),
+                bbox_xmax: (detection.bbox_xmax - crop_box.x as f32).min(cropped.width() as f32),
+                bbox_ymax: (detection.bbox_ymax - crop_box.y as f32).min(cropped.height() as f32),
+                confidence: detection.confidence,
+                has_person: detection.has_person,
+            };
+            cropped = visualization::draw_detection_marker(&cropped, &adjusted_detection);
+        }
 
         // Determine output directory (nested if --all-aspects)
         let aspect_dir = if cli.all_aspects {
